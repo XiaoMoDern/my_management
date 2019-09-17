@@ -4,22 +4,18 @@
       <a-layout-sider collapsible v-model="collapsed">
         <div class="logo">后台管理系统</div>
         <a-menu theme="dark" :defaultSelectedKeys="['1']" mode="inline">
-          <!-- <a-menu-item key="1">
-            <a-icon type="pie-chart" />
-            <span>商品管理</span>
-          </a-menu-item>-->
-          <!-- <a-menu-item key="2">
-            <a-icon type="desktop" />
-            <span>Option 2</span>
-          </a-menu-item>-->
           <a-sub-menu key="sub1">
             <span slot="title">
               <a-icon type="pie-chart" />
               <span>商品管理</span>
             </span>
-            <a-menu-item key="3">商品列表</a-menu-item>
-            <a-menu-item key="4">商品分类</a-menu-item>
-            <a-menu-item key="5">添加商品</a-menu-item>
+            <a-menu-item
+              v-for="(item,index) in list"
+              :key="index"
+              @click="goto(item.urlList)"
+            >{{item.name}}</a-menu-item>
+            <!-- <a-menu-item key="4">商品分类</a-menu-item>
+            <a-menu-item key="5">添加商品</a-menu-item>-->
           </a-sub-menu>
           <a-sub-menu key="sub2">
             <span slot="title">
@@ -51,7 +47,9 @@
             <a-breadcrumb-item>User</a-breadcrumb-item>
             <a-breadcrumb-item>Bill</a-breadcrumb-item>
           </a-breadcrumb>
-          <div :style="{ padding: '24px', background: '#fff', minHeight: '360px' }">Bill is a cat.</div>
+          <div :style="{ padding: '24px', background: '#fff', minHeight: '360px' }">
+            <router-view></router-view>
+          </div>
         </a-layout-content>
         <a-layout-footer style="text-align: center">Ant Design ©2018 Created by Ant UED</a-layout-footer>
       </a-layout>
@@ -63,11 +61,31 @@
 import Vue from "vue";
 import Antd from "ant-design-vue";
 import "ant-design-vue/dist/antd.css";
+
 export default {
   data() {
     return {
-      collapsed: false
+      collapsed: false,
+      list: [
+        {
+          key: "1",
+          name: "商品列表",
+          urlList: "/home/list"
+        },
+        {
+          key: "2",
+          name: "商品分类",
+          urlList: "/home/classlist"
+        }
+      ]
     };
+  },
+  methods: {
+    goto(name) {
+      this.$router.push({
+        path: name
+      });
+    }
   }
 };
 </script>

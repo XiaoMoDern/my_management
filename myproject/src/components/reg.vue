@@ -1,73 +1,116 @@
 <template>
   <div class="box">
-    <div id="login">
-      <a-form
-        id="components-form-demo-normal-login"
-        :form="form"
-        class="login-form"
-        @submit="handleSubmit"
-      >
-        <a-form-item>
-          <a-input
-            v-decorator="[
-          'phone',
-          { rules: [{ required: true, message: '请输入正确的号码!' }] }
-        ]"
-            placeholder="请输入电话号码"
-            @blur="validatePhoneBlur"
-          >
-            <a-icon slot="prefix" type="user" style="color: rgba(0,0,0,.25)" />
-          </a-input>
-        </a-form-item>
-        <a-form-item>
-          <a-input
-            v-decorator="[
-          'password',
-          { rules: [{ required: true, message: '请输入正确的密码!' }] }
-        ]"
-            type="password"
-            placeholder="请输入六位密码"
-          >
-            <a-icon slot="prefix" type="lock" style="color: rgba(0,0,0,.25)" />
-          </a-input>
-        </a-form-item>
-        <a-form-item>
-          <!-- <a class="login-form-forgot" href>Forgot password</a> -->
-          <a-button type="primary" html-type="submit" class="login-form-button">注册</a-button>
-          <!-- Or
-          <a href>register now!</a>-->
-        </a-form-item>
-      </a-form>
-    </div>
+    <el-form
+      :model="ruleForm"
+      status-icon
+      :rules="rules"
+      ref="regForm"
+      label-width="100px"
+      class="demo-ruleForm"
+    >
+      <el-form-item label="用户名" prop="username" >
+        <el-input type="text" v-model="ruleForm.username"></el-input>
+      </el-form-item>
+      <el-form-item label="密码" prop="pass">
+        <el-input type="password" v-model="ruleForm.pass" autocomplete="off"></el-input>
+      </el-form-item>
+      <el-form-item label="确认密码" prop="checkPass">
+        <el-input type="password" v-model="ruleForm.checkPass" autocomplete="off"></el-input>
+      </el-form-item>
+      <el-form-item>
+        <el-button type="success" @click="gotoReg">注册</el-button>
+      </el-form-item>
+    </el-form>
   </div>
 </template>
-
 <script>
+import Vue from "vue";
+import ElementUI from "element-ui";
+import "element-ui/lib/theme-chalk/index.css";
+Vue.use(ElementUI);
+
 export default {
-  beforeCreate() {
-    this.form = this.$form.createForm(this);
-    this.visible = true;
-  },
-  methods: {
-    handleSubmit(e) {
-      e.preventDefault();
-      this.form.validateFields((err, values) => {
-        if (!err) {
-          console.log("Received values of form: ", values);
+  data() {
+    var validatePass = (rule, value, callback) => {
+      if (value === "") {
+        callback(new Error("请输入密码"));
+      } else {
+        if (this.ruleForm.checkPass !== "") {
+          this.$refs.regForm.validateField("checkPass");
+        }
+        callback();
+      }
+    };
+
+    var checkPass = (rule, value, callback) => {
+      if (value === "") {
+        // 校验失败：需要往回调函数传入一个错误对象
+        callback(new Error("请再次输入密码"));
+      } else if (value !== this.ruleForm.pass) {
+        callback(new Error("两次输入密码不一致!"));
+      } else {
+        //通过验证
+        callback();
+      }
+    };
+
+    var checkUsername = async (rule, value, callback) => {
+      // 发起请求校验用户名是否已被注册
+      let { data } = await this.$axios.get("/user/check", {
+        params: {
+          username: this.ruleForm.username
         }
       });
-    },
-    validatePhoneBlur(e) {
-      const validatePhoneReg = /^1\d{10}$/;
-      if (e.target.value && !validatePhoneReg.test(e.target.value)) {
-        const arr = [
-          {
-            message: "您输入的手机格式不正确!",
-            field: "phone"
-          }
-        ];
-        this.form.setFields({ phone: { value: e.target.value, errors: arr } });
+      console.log(data);
+      if (data.code === 0) {
+        callback(new Error("用户名已存在"));
+      } else {
+        //通过验证
+        callback();
       }
+    };
+    return {
+      ruleForm: {
+        username: "",
+        pass: "",
+        checkPass: ""
+      },
+      rules: {
+        pass: [
+          { required: true, message: "必须添加密码", trigger: "blur" },
+          { validator: validatePass, trigger: "blur" }
+        ],
+        checkPass: [{ validator: checkPass, trigger: "blur" }],
+        username: [
+          { required: true, message: "必须填写用户名", trigger: "blur" },
+          {
+            min: 3,
+            max: 20,
+            message: "长度在 3 到 20 个字符",
+            trigger: "blur"
+          },
+          { validator: checkUsername, trigger: "blur" }
+        ]
+      }
+    };
+  },
+  methods: {
+    gotoReg() {
+      this.$refs["regForm"].validate(async valid => {
+        if (valid) {
+          let { data } = await this.$axios.post("/user/reg", {
+            username: this.ruleForm.username,
+            password: this.ruleForm.pass
+          });
+
+          if (data.code === 1) {
+            this.$router.push("/login");
+          }
+        } else {
+          console.log("error submit!!");
+          return false;
+        }
+      });
     }
   }
 };
@@ -76,26 +119,23 @@ export default {
 <style scoped>
 .box {
   width: 100%;
-  height: 635px;
-  overflow: hidden;
+  height: 100%;
   background: #e1e1e1;
+  overflow: hidden;
+  margin: auto;
+}
+.box >>> .el-form {
+  margin: 100px auto 309px;
 }
 
-#login {
-  width: 30%;
-  margin: 10% auto;
-  position: relative;
+.el-input {
+  width: 40%;
 }
 
-#components-form-demo-normal-login .login-form {
-  max-width: 300px;
-}
-
-#components-form-demo-normal-login .login-form-forgot {
-  float: right;
-}
-
-#components-form-demo-normal-login .login-form-button {
-  width: 100%;
+.box >>> .el-form-item {
+  margin-left: 200px;
 }
 </style>
+
+
+
